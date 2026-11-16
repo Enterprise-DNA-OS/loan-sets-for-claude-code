@@ -14,7 +14,10 @@ That layer used to be the whole product, because talking to a database was hard.
 ## What you give up
 
 - **A visual board.** Stages are a table you ask about, not cards you drag.
-- **A phone app.** It runs where Claude Code runs.
+- **A rep app in theatre.** Reps enter a charge sheet by asking Claude Code, or the office enters it from a photo of the sheet. There is no offline phone app.
+- **Scanning.** No barcode or RFID reader is wired in. A scanner that writes a CSV can feed the importer; a live RFID cabinet needs a customised version.
+- **A hospital portal.** Hospitals hear from you by email, drafted here. They do not log in to see their sets.
+- **Live courier tracking.** Shipments are recorded when they leave and when they are signed for, not tracked in between.
 - **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for businesses that want someone to call.
 
 ## Who this fits

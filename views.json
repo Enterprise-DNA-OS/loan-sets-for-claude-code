@@ -1,14 +1,34 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Loan Sets for Claude Code: what needs attention, rendered by npm run view",
+    "title": "This week in the loan set room",
+    "subtitle": "Cases, sets and what is late, rendered by npm run view",
     "sections": [
-      {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
-      }
+      { "title": "Cases in the next 14 days", "sql": "select code, surgery_on, days_to_go, hospital, surgeon, rep, sets, delivered, issue from case_readiness order by surgery_on, code" },
+      { "title": "Sets booked on two cases too close to turn around", "sql": "select set_code, case_code, surgery_on, hospital, clashes_with from case_set_checks where clashes_with is not null order by set_code" },
+      { "title": "Sets short of their kit list", "sql": "select set_code, sku, description, kit_qty, in_set, short from set_shortfalls order by set_code" },
+      { "title": "Sets still at a hospital", "sql": "select set_code, case_code, hospital_name, surgery_on, days_out, return_days, rep from overdue_returns order by days_out desc" }
+    ]
+  },
+  {
+    "name": "money",
+    "title": "Money in the field",
+    "subtitle": "Unbilled cases, consignment against par and stock that has not moved",
+    "sections": [
+      { "title": "Surgery done, not invoiced", "sql": "select code, surgery_on, days_since, hospital, rep, usage_lines, value_cents, po_number, issue from unbilled_cases order by days_since desc" },
+      { "title": "Consignment against par", "sql": "select location, sku, description, par, on_hand, to_replenish from consignment_check order by to_replenish desc, location" },
+      { "title": "Field stock still for 180 days", "sql": "select location, kind, sku, lot_no, qty, last_moved_on, days_still, value_cents from slow_stock order by value_cents desc" },
+      { "title": "Sets and their work", "sql": "select set_code, kit, cases_90_days, booked_ahead, last_used_on from set_utilisation order by cases_90_days" }
+    ]
+  },
+  {
+    "name": "traceability",
+    "title": "Traceability and rules",
+    "subtitle": "Expiry, recalls and the regulatory checks",
+    "sections": [
+      { "title": "Rule checks", "note": "Each row cites its rule. Sources in docs/compliance.md.", "sql": "select rule, record, detail, due_on, days_left, source from compliance_findings order by days_left nulls last, rule" },
+      { "title": "Open recalls: where every unit is", "sql": "select action, sku, lot_no, held_in, place, hospital, qty, case_code, surgery_on from recall_trace order by action, held_in" },
+      { "title": "Expiring within 90 days", "sql": "select held_in, place, sku, lot_no, expires_on, days_left, qty from expiring order by expires_on" }
     ]
   }
 ]

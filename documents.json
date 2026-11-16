@@ -1,11 +1,45 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "delivery-docket",
+    "title": "Loan set delivery docket",
+    "for_each": "select c.id, c.code from cases c where c.status in ('booked', 'confirmed') and c.surgery_on >= current_date and exists (select 1 from case_sets cs where cs.case_id = c.id) order by c.surgery_on",
+    "file": "code",
+    "sections": [
+      { "title": "Case", "layout": "record", "sql": "select c.code as case, c.surgery_on, h.name as hospital, sg.name as surgeon, c.procedure, c.patient_ref, r.name as rep, h.theatre_contact from cases c join hospitals h on h.id = c.hospital_id left join surgeons sg on sg.id = c.surgeon_id left join reps r on r.id = c.rep_id where c.id = $1" },
+      { "title": "Sets and delivery deadline", "note": "Due at the hospital by the time shown, inside its loan set lead time.", "sql": "select k.set_code, k.deliver_by, k.items_short, k.items_expiring, k.clashes_with from case_set_checks k join cases c on c.code = k.case_code where c.id = $1 order by k.set_code" },
+      { "title": "Contents", "sql": "select s.code as set_code, p.sku, p.description, lo.lot_no, lo.expires_on, si.qty from case_sets cs join sets s on s.id = cs.set_id join set_items si on si.set_id = s.id join products p on p.id = si.product_id left join lots lo on lo.id = si.lot_id where cs.case_id = $1 and si.qty > 0 order by s.code, p.sku" }
+    ]
+  },
+  {
+    "name": "charge-sheet",
+    "title": "Implant charge sheet",
+    "for_each": "select c.id, c.code from cases c where c.status = 'done' and exists (select 1 from usage u where u.case_id = c.id) order by c.surgery_on desc",
+    "file": "code",
+    "sections": [
+      { "title": "Case", "layout": "record", "sql": "select c.code as case, c.surgery_on, h.name as hospital, sg.name as surgeon, c.procedure, c.patient_ref, c.po_number, c.invoice_no from cases c join hospitals h on h.id = c.hospital_id left join surgeons sg on sg.id = c.surgeon_id where c.id = $1" },
+      { "title": "Items used", "note": "Lot and serial numbers are the distribution record for each implant.", "sql": "select p.sku, p.description, p.billing_code, lo.lot_no, u.serial_no, u.qty, u.price_cents, (u.qty * u.price_cents) as line_cents, u.implant_card_given from usage u join products p on p.id = u.product_id left join lots lo on lo.id = u.lot_id where u.case_id = $1 order by p.sku" },
+      { "title": "Total", "layout": "record", "sql": "select value_cents as total_cents, lines from case_value where id = $1" }
+    ]
+  },
+  {
+    "name": "recall-customer-list",
+    "title": "Market action customer list",
+    "for_each": "select id, code from market_actions where status = 'open' order by code",
+    "file": "code",
+    "sections": [
+      { "title": "Market action", "layout": "record", "sql": "select ma.code, ma.kind, ma.country, ma.notified_on, p.sku, p.description, coalesce(lo.lot_no, 'all lots') as lot, ma.reason from market_actions ma join products p on p.id = ma.product_id left join lots lo on lo.id = ma.lot_id where ma.id = $1" },
+      { "title": "Every affected unit", "note": "Stock and loan sets to pull, and patients' cases for the hospital to follow up.", "sql": "select t.held_in, t.place, t.hospital, t.qty, t.case_code, t.surgery_on, t.patient_ref from recall_trace t join market_actions ma on ma.code = t.action where ma.id = $1 order by t.held_in, t.place" }
+    ]
+  },
+  {
+    "name": "consignment-statement",
+    "title": "Consignment stock statement",
+    "for_each": "select id, name from locations where kind = 'consignment' order by code",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      { "title": "Location", "layout": "record", "sql": "select l.code, l.name, h.name as hospital, l.country from locations l left join hospitals h on h.id = l.hospital_id where l.id = $1" },
+      { "title": "Stock held on consignment", "sql": "select p.sku, p.description, lo.lot_no, lo.expires_on, st.qty, (st.qty * p.price_cents) as value_cents, st.last_moved_on from stock st join products p on p.id = st.product_id left join lots lo on lo.id = st.lot_id where st.location_id = $1 and st.qty > 0 order by p.sku, lo.expires_on" },
+      { "title": "Against par", "sql": "select k.sku, k.par, k.on_hand, k.to_replenish from consignment_check k join locations l on l.code = k.location where l.id = $1 order by k.sku" }
     ]
   }
 ]
