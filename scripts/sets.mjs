@@ -191,7 +191,7 @@ export function printRows(rows) {
       key,
       label: key.replace(/_cents$/, '').replace(/_/g, ' '),
       align: typeof rows[0][key] === 'number' ? 'right' : 'left',
-      width: 70,
+      width: 100,
       format: key.endsWith('_cents') ? (v) => (v === null ? '' : (Number(v) / 100).toFixed(2)) : (v) => (v === true ? 'yes' : v === false ? 'no' : v instanceof Date ? v.toISOString().slice(0, 16).replace('T', ' ') : typeof v === 'object' && v !== null ? JSON.stringify(v) : v),
     }));
   return textTable(rows, columns);
